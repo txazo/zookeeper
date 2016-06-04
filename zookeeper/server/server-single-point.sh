@@ -1,0 +1,1 @@
+bin/zkServer.sh start

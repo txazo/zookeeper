@@ -2,6 +2,10 @@
 
 Apache ZooKeeper
 
+## 说明
+
+* ZooKeeper源码版本: release-3.4.8
+
 ## IDEA中ZooKeeper启动配置
 
 * Main class: org.apache.zookeeper.server.quorum.QuorumPeerMain

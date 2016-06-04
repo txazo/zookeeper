@@ -1,0 +1,11 @@
+ZooKeeper Data Model
+
+ZooKeeper的Data Model类似一个文件系统结构, 唯一的不同是中间节点可以像子节点一样关联数据
+
+/
+    /node_1
+        /node_1_1
+        /node_1_1
+    /node_2
+        /node_2_1
+        /node_2_2
