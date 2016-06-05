@@ -1,6 +1,7 @@
-package test.zookeeper.curator;
+package test.curator.node;
 
 import org.junit.Test;
+import test.curator.CuratorJUnitTest;
 
 public class NodeTest extends CuratorJUnitTest {
 

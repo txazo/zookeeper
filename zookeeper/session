@@ -1,8 +1,0 @@
-ZooKeeper Session
-
-session id
-password
-
-2 tickTime <= session timeout <= 20 tickTime
-
-watcher: client状态改变
