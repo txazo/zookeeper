@@ -1,10 +1,8 @@
 package test;
 
-import org.junit.Assert;
-
 import java.util.Properties;
 
-public abstract class ConfigLoader extends Assert {
+public abstract class ConfigLoader extends FieldTraverser {
 
     private static final String CONFIG = "/zookeeper.properties";
     private static final String SERVER_LIST = "zookeeper.server.list";
