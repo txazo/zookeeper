@@ -29,20 +29,28 @@ public enum CreateMode {
     /**
      * The znode will not be automatically deleted upon client's disconnect.
      */
+
+    // 源码解析:
     PERSISTENT (0, false, false),
     /**
     * The znode will not be automatically deleted upon client's disconnect,
     * and its name will be appended with a monotonically increasing number.
     */
+
+    // 源码解析:
     PERSISTENT_SEQUENTIAL (2, false, true),
     /**
      * The znode will be deleted upon the client's disconnect.
      */
+
+    // 源码解析: 临时节点
     EPHEMERAL (1, true, false),
     /**
      * The znode will be deleted upon the client's disconnect, and its name
      * will be appended with a monotonically increasing number.
      */
+
+    // 源码解析:
     EPHEMERAL_SEQUENTIAL (3, true, true);
 
     private static final Logger LOG = LoggerFactory.getLogger(CreateMode.class);

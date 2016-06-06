@@ -22,7 +22,7 @@ public class NodeTest extends ZookeeperJUnitTest {
     @Test
     public void testStat() throws Exception {
         if (zooKeeper.exists("/node", false) == null) {
-            zooKeeper.create("/node", "data".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            zooKeeper.create("/node", "data".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
         }
         Stat stat = zooKeeper.exists("/node", false);
         assertNotNull(stat);
