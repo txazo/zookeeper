@@ -15,9 +15,9 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
 
     private static final String SERVER_LIST = "zookeeper.server.list";
 
-    private boolean isZooKeeperTest = false;
     private ZooKeeper zooKeeper;
-    private CountDownLatch connectionLatch = new CountDownLatch(1);
+    private boolean isZooKeeperTest = false;
+    private CountDownLatch connectedLatch = new CountDownLatch(1);
 
     public ZooKeeperJUnitRunner(Class<?> clazz) throws InitializationError {
         super(clazz);
@@ -29,19 +29,19 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
     }
 
     @Override
-    protected Statement methodInvoker(FrameworkMethod method, Object test) {
-        initBeforeInvoker(method, test);
-        return super.methodInvoker(method, test);
-    }
-
-    @Override
     public void process(WatchedEvent event) {
         if (event.getState() == Event.KeeperState.SyncConnected) {
-            connectionLatch.countDown();
+            connectedLatch.countDown();
         }
     }
 
-    private void initBeforeInvoker(FrameworkMethod method, Object test) {
+    @Override
+    protected Statement methodInvoker(FrameworkMethod method, Object test) {
+        beforeMethodInvoker(method, test);
+        return super.methodInvoker(method, test);
+    }
+
+    private void beforeMethodInvoker(FrameworkMethod method, Object test) {
         if (isZooKeeperTest) {
             ZooConfig zooConfig = method.getAnnotation(ZooConfig.class);
             if (zooConfig != null) {
@@ -49,18 +49,12 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
                     String serverList = loadConfig(zooConfig.config()).getProperty(SERVER_LIST);
                     zooKeeper = new ZooKeeper(serverList, zooConfig.timeout(), this);
                     waitUtilConnected();
+                    injectZooKeeper(test);
                     initNodes(zooConfig.initNodes());
-                    test.getClass().getMethod("setZooKeeper", ZooKeeper.class).invoke(test, zooKeeper);
                 } catch (Exception e) {
-                    throw new ZooKeeperJUnitException("initBeforeInvoker failed", e);
+                    throw new ZooKeeperJUnitException("beforeMethodInvoker failed", e);
                 }
             }
-        }
-    }
-
-    private void waitUtilConnected() throws InterruptedException {
-        if (zooKeeper.getState() == ZooKeeper.States.CONNECTING) {
-            connectionLatch.await();
         }
     }
 
@@ -68,6 +62,16 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
         Properties prop = new Properties();
         prop.load(getClass().getResourceAsStream(config));
         return prop;
+    }
+
+    private void waitUtilConnected() throws InterruptedException {
+        if (zooKeeper.getState() == ZooKeeper.States.CONNECTING) {
+            connectedLatch.await();
+        }
+    }
+
+    private void injectZooKeeper(Object test) throws Exception {
+        test.getClass().getMethod("setZooKeeper", ZooKeeper.class).invoke(test, zooKeeper);
     }
 
     private void initNodes(String[] nodes) throws Exception {
@@ -83,34 +87,19 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
             return;
         }
 
-        clearChildNode(node);
-        createNode(node);
+        removeChildNodes(node);
+        createNodeWithParent(node);
     }
 
-    private void clearChildNode(String node) throws Exception {
+    private void removeChildNodes(String node) throws Exception {
         if (existsNode(node)) {
-            List<String> childrens = zooKeeper.getChildren(node, false);
-            if (childrens != null && childrens.size() > 0) {
-                for (String childNode : childrens) {
-                    clearChildNode(node + "/" + childNode);
+            List<String> childNodes = zooKeeper.getChildren(node, false);
+            if (childNodes != null && childNodes.size() > 0) {
+                for (String childNode : childNodes) {
+                    removeChildNodes(node + "/" + childNode);
                 }
             }
             zooKeeper.delete(node, -1);
-        }
-    }
-
-    private void createNode(String node) throws Exception {
-        createParentNode(node);
-        zooKeeper.create(node, "".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-    }
-
-    private void createParentNode(String node) throws Exception {
-        String parentNode = node.substring(0, node.lastIndexOf("/"));
-        if (!isBlank(parentNode)) {
-            createParentNode(parentNode);
-            if (!existsNode(parentNode)) {
-                zooKeeper.create(parentNode, "".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            }
         }
     }
 
@@ -118,8 +107,23 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
         return zooKeeper.exists(node, false) != null;
     }
 
-    private boolean isBlank(String str) {
-        return str == null || str.trim().equals("");
+    private void createNodeWithParent(String node) throws Exception {
+        String parentNode = node.substring(0, node.lastIndexOf("/"));
+        if (isNotBlank(parentNode)) {
+            createNodeWithParent(parentNode);
+        }
+
+        createNode(node);
+    }
+
+    private void createNode(String node) throws Exception {
+        if (!existsNode(node)) {
+            zooKeeper.create(node, "".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        }
+    }
+
+    private boolean isNotBlank(String str) {
+        return str != null && !"".equals(str.trim());
     }
 
 }

@@ -13,8 +13,6 @@ public @interface ZooConfig {
 
     int timeout() default 5000;
 
-    String watcher() default "test.zookeeper.junit4.ZooKeeperJUnitTest";
-
     String[] initNodes() default {};
 
 }
