@@ -15,4 +15,6 @@ public @interface ZooConfig {
 
     String[] initNodes() default {};
 
+    boolean async() default false;
+
 }

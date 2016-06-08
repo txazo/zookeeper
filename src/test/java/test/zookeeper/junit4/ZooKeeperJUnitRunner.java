@@ -17,6 +17,7 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
 
     private ZooKeeper zooKeeper;
     private boolean isZooKeeperTest = false;
+    private boolean async = false;
     private CountDownLatch connectedLatch = new CountDownLatch(1);
 
     public ZooKeeperJUnitRunner(Class<?> clazz) throws InitializationError {
@@ -38,7 +39,17 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
     @Override
     protected Statement methodInvoker(FrameworkMethod method, Object test) {
         beforeMethodInvoker(method, test);
-        return super.methodInvoker(method, test);
+        final Object target = test;
+        final Statement statement = super.methodInvoker(method, test);
+        return new Statement() {
+
+            @Override
+            public void evaluate() throws Throwable {
+                statement.evaluate();
+                syncMethod(target);
+            }
+
+        };
     }
 
     private void beforeMethodInvoker(FrameworkMethod method, Object test) {
@@ -46,6 +57,7 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
             ZooConfig zooConfig = method.getAnnotation(ZooConfig.class);
             if (zooConfig != null) {
                 try {
+                    async = zooConfig.async();
                     String serverList = loadConfig(zooConfig.config()).getProperty(SERVER_LIST);
                     zooKeeper = new ZooKeeper(serverList, zooConfig.timeout(), this);
                     waitUtilConnected();
@@ -55,6 +67,14 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
                     throw new ZooKeeperJUnitException("beforeMethodInvoker failed", e);
                 }
             }
+        }
+    }
+
+    private void syncMethod(Object test) {
+        try {
+            test.getClass().getMethod("asyncAwait", boolean.class).invoke(test, async);
+        } catch (Exception e) {
+            throw new ZooKeeperJUnitException("syncMethod failed", e);
         }
     }
 
