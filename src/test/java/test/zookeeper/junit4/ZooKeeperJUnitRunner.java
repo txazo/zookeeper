@@ -38,6 +38,10 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
 
     @Override
     protected Statement methodInvoker(FrameworkMethod method, Object test) {
+        if (!isZooKeeperTest) {
+            return super.methodInvoker(method, test);
+        }
+
         beforeMethodInvoker(method, test);
         final Object target = test;
         final Statement statement = super.methodInvoker(method, test);
@@ -53,19 +57,17 @@ public class ZooKeeperJUnitRunner extends BlockJUnit4ClassRunner implements Watc
     }
 
     private void beforeMethodInvoker(FrameworkMethod method, Object test) {
-        if (isZooKeeperTest) {
-            ZooConfig zooConfig = method.getAnnotation(ZooConfig.class);
-            if (zooConfig != null) {
-                try {
-                    async = zooConfig.async();
-                    String serverList = loadConfig(zooConfig.config()).getProperty(SERVER_LIST);
-                    zooKeeper = new ZooKeeper(serverList, zooConfig.timeout(), this);
-                    waitUtilConnected();
-                    injectZooKeeper(test);
-                    initNodes(zooConfig.initNodes());
-                } catch (Exception e) {
-                    throw new ZooKeeperJUnitException("beforeMethodInvoker failed", e);
-                }
+        ZooConfig zooConfig = method.getAnnotation(ZooConfig.class);
+        if (zooConfig != null) {
+            try {
+                async = zooConfig.async();
+                String serverList = loadConfig(zooConfig.config()).getProperty(SERVER_LIST);
+                zooKeeper = new ZooKeeper(serverList, zooConfig.timeout(), this);
+                waitUtilConnected();
+                injectZooKeeper(test);
+                initNodes(zooConfig.initNodes());
+            } catch (Exception e) {
+                throw new ZooKeeperJUnitException("beforeMethodInvoker failed", e);
             }
         }
     }

@@ -1,4 +1,4 @@
-package test.zookeeper.node;
+package test.zookeeper;
 
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.ZooDefs;
