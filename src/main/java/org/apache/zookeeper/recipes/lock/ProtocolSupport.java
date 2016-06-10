@@ -41,9 +41,12 @@ class ProtocolSupport {
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolSupport.class);
 
     protected final ZooKeeper zookeeper;
+    // 是否已经关闭
     private AtomicBoolean closed = new AtomicBoolean(false);
     private long retryDelay = 500L;
+    // 重试次数
     private int retryCount = 10;
+    // 锁父节点的ACL
     private List<ACL> acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
     public ProtocolSupport(ZooKeeper zookeeper) {
@@ -113,6 +116,8 @@ class ProtocolSupport {
      * @return object. it needs to be cast to the callee's expected 
      * return type.
      */
+
+    // 执行指定的操作, 连接失败后重试
     protected Object retryOperation(ZooKeeperOperation operation) 
         throws KeeperException, InterruptedException {
         KeeperException exception = null;
@@ -120,14 +125,17 @@ class ProtocolSupport {
             try {
                 return operation.execute();
             } catch (KeeperException.SessionExpiredException e) {
+                // session过期
                 LOG.warn("Session expired for: " + zookeeper + " so reconnecting due to: " + e, e);
                 throw e;
             } catch (KeeperException.ConnectionLossException e) {
+                // 连接丢失
                 if (exception == null) {
                     exception = e;
                 }
                 LOG.debug("Attempt " + i + " failed with connection loss so " +
                 		"attempting to reconnect: " + e, e);
+                // 重试延迟
                 retryDelay(i);
             }
         }
@@ -158,6 +166,8 @@ class ProtocolSupport {
                     if (stat != null) {
                         return true;
                     }
+
+                    // 锁父节点不存在, 则创建
                     zookeeper.create(path, data, acl, flags);
                     return true;
                 }

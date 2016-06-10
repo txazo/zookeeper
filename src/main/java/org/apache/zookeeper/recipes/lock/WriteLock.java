@@ -43,12 +43,15 @@ import java.util.TreeSet;
 public class WriteLock extends ProtocolSupport {
     private static final Logger LOG = LoggerFactory.getLogger(WriteLock.class);
 
+    // 锁父节点路径
     private final String dir;
+    // 锁节点
     private String id;
     private ZNodeName idName;
     private String ownerId;
     private String lastChildId;
     private byte[] data = {0x12, 0x34};
+    // 锁监听器
     private LockListener callback;
     private LockZooKeeperOperation zop;
     
@@ -201,6 +204,8 @@ public class WriteLock extends ProtocolSupport {
          * obtaining the lock
          * @return if the command was successful or not
          */
+
+        // 执行加锁操作
         public boolean execute() throws KeeperException, InterruptedException {
             do {
                 if (id == null) {
@@ -212,18 +217,25 @@ public class WriteLock extends ProtocolSupport {
                     idName = new ZNodeName(id);
                 }
                 if (id != null) {
+                    // 锁节点的子节点列表
                     List<String> names = zookeeper.getChildren(dir, false);
                     if (names.isEmpty()) {
                         LOG.warn("No children in: " + dir + " when we've just " +
                         "created one! Lets recreate it...");
                         // lets force the recreation of the id
+
+                        // 子节点为空, 重试
                         id = null;
                     } else {
                         // lets sort them explicitly (though they do seem to come back in order ususally :)
+
+                        // 子节点排序
                         SortedSet<ZNodeName> sortedNames = new TreeSet<ZNodeName>();
                         for (String name : names) {
                             sortedNames.add(new ZNodeName(dir + "/" + name));
                         }
+
+                        // 当前锁节点的id
                         ownerId = sortedNames.first().getName();
                         SortedSet<ZNodeName> lessThanMe = sortedNames.headSet(idName);
                         if (!lessThanMe.isEmpty()) {
@@ -232,6 +244,8 @@ public class WriteLock extends ProtocolSupport {
                             if (LOG.isDebugEnabled()) {
                                 LOG.debug("watching less than me node: " + lastChildId);
                             }
+
+                            // 监听下一个节点
                             Stat stat = zookeeper.exists(lastChildId, new LockWatcher());
                             if (stat != null) {
                                 return Boolean.FALSE;
@@ -264,6 +278,7 @@ public class WriteLock extends ProtocolSupport {
         if (isClosed()) {
             return false;
         }
+        // 保证锁父节点存在
         ensurePathExists(dir);
 
         return (Boolean) retryOperation(zop);

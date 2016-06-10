@@ -1,11 +1,26 @@
 package test.zookeeper.lock;
 
-import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
 
-public interface DistributedLock {
+public class DistributedLock {
 
-    public void lock() throws InterruptedException, KeeperException;
+    private static final byte[] data = {0x1A, 0x2B};
+    private static final String lockPath = "/lock";
 
-    public void unlock() throws KeeperException;
+    private String path;
+    private ZooKeeper zooKeeper;
+
+    public DistributedLock(ZooKeeper zooKeeper, String path) {
+        this.zooKeeper = zooKeeper;
+        this.path = path;
+    }
+
+    public void lock() {
+
+    }
+
+    public void unlock() {
+
+    }
 
 }
