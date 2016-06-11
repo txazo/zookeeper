@@ -57,7 +57,7 @@ public class ACLTest extends ZooKeeperJUnitTest {
      * set acl sync
      */
     @Test
-    @ZooConfig(initNodes = {"/node"})
+    @ZooConfig(initNodes = {"/node"}, async = true)
     public void testSetACLAsync() throws Exception {
         zooKeeper.setACL("/node", Arrays.asList(new ACL(ZooDefs.Perms.ALL, new Id("world", "anyone"))), -1, new AsyncCallback.StatCallback() {
 

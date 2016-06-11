@@ -56,7 +56,7 @@ public class NodeTest extends ZooKeeperJUnitTest {
     }
 
     @Test
-    @ZooConfig(initNodes = {"/node"})
+    @ZooConfig(initNodes = {"/node"}, async = true)
     public void testDeleteNodeAsync() throws Exception {
         zooKeeper.delete("/node", -1, new AsyncCallback.VoidCallback() {
 
@@ -82,7 +82,7 @@ public class NodeTest extends ZooKeeperJUnitTest {
     }
 
     @Test
-    @ZooConfig(initNodes = {"/node"})
+    @ZooConfig(initNodes = {"/node"}, async = true)
     public void testNodeExistsAsync() throws Exception {
         zooKeeper.exists("/node", false, new AsyncCallback.StatCallback() {
 
@@ -110,7 +110,7 @@ public class NodeTest extends ZooKeeperJUnitTest {
     }
 
     @Test
-    @ZooConfig(initNodes = {"/node"})
+    @ZooConfig(initNodes = {"/node"}, async = true)
     public void testGetNodeDataAsync() throws Exception {
         zooKeeper.setData("/node", "data".getBytes(), -1);
         zooKeeper.getData("/node", false, new AsyncCallback.DataCallback() {
@@ -139,7 +139,7 @@ public class NodeTest extends ZooKeeperJUnitTest {
     }
 
     @Test
-    @ZooConfig(initNodes = {"/node"})
+    @ZooConfig(initNodes = {"/node"}, async = true)
     public void testSetNodeDataAsync() throws Exception {
         zooKeeper.setData("/node", "data".getBytes(), -1, new AsyncCallback.StatCallback() {
 
@@ -167,7 +167,7 @@ public class NodeTest extends ZooKeeperJUnitTest {
     }
 
     @Test
-    @ZooConfig(initNodes = {"/node/child"})
+    @ZooConfig(initNodes = {"/node/child"}, async = true)
     public void testGetChildrenAsync() throws Exception {
         zooKeeper.getChildren("/node", false, new AsyncCallback.ChildrenCallback() {
 
