@@ -5,7 +5,8 @@ import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 public class QuorumPeerMainTest {
 
     public static void main(String[] args) throws Exception {
-        for (int i = 1; i <= 5; i++) {
+        int count = 5;
+        for (int i = 1; i <= count; i++) {
             new Thread(new ZookeeperServer("/zoo" + i + ".cfg")).start();
         }
         System.in.read();
