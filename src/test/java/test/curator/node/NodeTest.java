@@ -11,6 +11,13 @@ public class NodeTest extends CuratorJUnitTest {
     }
 
     @Test
+    public void testMultiCreate() throws Exception {
+        for (int i = 0; i < 100000; i++) {
+            client.create().forPath("/node/" + i, String.valueOf(i).getBytes());
+        }
+    }
+
+    @Test
     public void testGetData() throws Exception {
         byte[] data = client.getData().forPath("/node");
         assertEquals("data", new String(data));
