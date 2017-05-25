@@ -2,7 +2,7 @@ package test.server;
 
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 
-public class QuorumPeerMainTest {
+public class MultiServerTest {
 
     public static void main(String[] args) throws Exception {
         int count = 5;
@@ -22,7 +22,7 @@ public class QuorumPeerMainTest {
 
         @Override
         public void run() {
-            QuorumPeerMain.main(new String[]{ZookeeperServer.class.getResource(config).getPath()});
+            QuorumPeerMain.main(new String[]{MultiServerTest.class.getResource(config).getPath()});
         }
 
     }

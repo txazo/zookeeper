@@ -12,8 +12,12 @@ public class NodeTest extends CuratorJUnitTest {
 
     @Test
     public void testMultiCreate() throws Exception {
-        for (int i = 0; i < 100000; i++) {
-            client.create().forPath("/node/" + i, String.valueOf(i).getBytes());
+        long start = System.currentTimeMillis();
+        long id = 0;
+        for (long i = 0; i < 100000; i++) {
+            id = start + i;
+            client.create().forPath("/node/" + id, String.valueOf(id).getBytes());
+            Thread.sleep(100);
         }
     }
 
