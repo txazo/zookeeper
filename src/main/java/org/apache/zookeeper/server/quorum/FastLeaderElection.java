@@ -795,6 +795,8 @@ public class FastLeaderElection implements Election {
      * changes its state to LOOKING, this method is invoked, and it
      * sends notifications to all other peers.
      */
+
+    // 开始新一轮Leader选举
     public Vote lookForLeader() throws InterruptedException {
         try {
             self.jmxLeaderElectionBean = new LeaderElectionBean();
@@ -816,6 +818,7 @@ public class FastLeaderElection implements Election {
 
             synchronized(this){
                 logicalclock++;
+                // 更新新的提议
                 updateProposal(getInitId(), getInitLastLoggedZxid(), getPeerEpoch());
             }
 

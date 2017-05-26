@@ -94,7 +94,8 @@ public class QuorumCnxManager {
     /*
      * Connection time out value in milliseconds 
      */
-    
+
+    // 连接超时时间
     private int cnxTO = 5000;
     
     /*
@@ -105,13 +106,18 @@ public class QuorumCnxManager {
     /*
      * Mapping from Peer to Thread number
      */
+    // 消息发送线程集合
     final ConcurrentHashMap<Long, SendWorker> senderWorkerMap;
+    // 消息发送队列集合
     final ConcurrentHashMap<Long, ArrayBlockingQueue<ByteBuffer>> queueSendMap;
+    // 最近发送的消息集合
     final ConcurrentHashMap<Long, ByteBuffer> lastMessageSent;
 
     /*
      * Reception queue
      */
+
+    // 消息接受队列
     public final ArrayBlockingQueue<Message> recvQueue;
     /*
      * Object to synchronize access to recvQueue
@@ -127,6 +133,8 @@ public class QuorumCnxManager {
     /*
      * Listener thread
      */
+
+    // 监听线程
     public final Listener listener;
 
     /*
@@ -241,6 +249,7 @@ public class QuorumCnxManager {
         try {
             // Read server id
             DataInputStream din = new DataInputStream(sock.getInputStream());
+            // 读取server id
             sid = din.readLong();
             if (sid < 0) { // this is not a server id but a protocol version (see ZOOKEEPER-1633)
                 sid = din.readLong();
@@ -278,6 +287,8 @@ public class QuorumCnxManager {
         
         //If wins the challenge, then close the new connection.
         if (sid < self.getId()) {
+            // 当前节点的sid比sid大
+
             /*
              * This replica might still believe that the connection to sid is
              * up, so we have to shut down the workers before trying to open a
@@ -297,6 +308,7 @@ public class QuorumCnxManager {
 
             // Otherwise start worker threads to receive data.
         } else {
+            // 当前节点的sid比sid小, 启动worker线程
             SendWorker sw = new SendWorker(sock, sid);
             RecvWorker rw = new RecvWorker(sock, sid, sw);
             sw.setRecv(rw);
@@ -535,12 +547,16 @@ public class QuorumCnxManager {
                     LOG.info("My election bind port: " + addr.toString());
                     setName(self.quorumPeers.get(self.getId()).electionAddr
                             .toString());
+
+                    // ServerSocket绑定选举端口
                     ss.bind(addr);
                     while (!shutdown) {
+                        // 接受集群其它节点的连接
                         Socket client = ss.accept();
                         setSockOpts(client);
                         LOG.info("Received connection request "
                                 + client.getRemoteSocketAddress());
+                        // 处理集群其它节点的连接
                         receiveConnection(client);
                         numRetries = 0;
                     }

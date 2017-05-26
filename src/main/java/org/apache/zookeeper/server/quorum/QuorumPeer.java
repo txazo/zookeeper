@@ -754,6 +754,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         LOG.debug("Starting quorum peer");
         try {
             jmxQuorumBean = new QuorumBean(this);
+            // 注册MBean
             MBeanRegistry.getInstance().register(jmxQuorumBean, null);
             for(QuorumServer s: getView().values()){
                 ZKMBeanInfo p;
@@ -783,8 +784,11 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             /*
              * Main loop
              */
+
+            // 选举主循环
             while (running) {
                 switch (getPeerState()) {
+                    // 初始状态
                 case LOOKING:
                     LOG.info("LOOKING");
 
@@ -834,6 +838,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                     } else {
                         try {
                             setBCVote(null);
+                            // 选举出新的Leader, 并广播给集群其它节点
                             setCurrentVote(makeLEStrategy().lookForLeader());
                         } catch (Exception e) {
                             LOG.warn("Unexpected exception", e);
