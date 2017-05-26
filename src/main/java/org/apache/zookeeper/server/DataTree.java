@@ -280,12 +280,16 @@ public class DataTree {
      * This is a pointer to the root of the DataTree. It is the source of truth,
      * but we usually use the nodes hashmap to find nodes in the tree.
      */
+
+    // 根节点
     private DataNode root = new DataNode(null, new byte[0], -1L,
             new StatPersisted());
 
     /**
      * create a /zookeeper filesystem that is the proc filesystem of zookeeper
      */
+
+    // /zookeeper节点
     private DataNode procDataNode = new DataNode(root, new byte[0], -1L,
             new StatPersisted());
 
@@ -293,18 +297,26 @@ public class DataTree {
      * create a /zookeeper/quota node for maintaining quota properties for
      * zookeeper
      */
+
+    // /zookeeper/quota节点
     private DataNode quotaDataNode = new DataNode(procDataNode, new byte[0],
             -1L, new StatPersisted());
 
     public DataTree() {
         /* Rather than fight it, let root have an alias */
+
+        // 设置根节点别名
         nodes.put("", root);
+        // 添加根节点
         nodes.put(rootZookeeper, root);
 
         /** add the proc node and quota node */
+
+        // 添加/zookeeper节点
         root.addChild(procChildZookeeper);
         nodes.put(procZookeeper, procDataNode);
 
+        // 添加/zookeeper/quota节点
         procDataNode.addChild(quotaChildZookeeper);
         nodes.put(quotaZookeeper, quotaDataNode);
     }
@@ -466,6 +478,7 @@ public class DataTree {
         stat.setVersion(0);
         stat.setAversion(0);
         stat.setEphemeralOwner(ephemeralOwner);
+        // 父节点
         DataNode parent = nodes.get(parentName);
         if (parent == null) {
             throw new KeeperException.NoNodeException();
@@ -473,6 +486,7 @@ public class DataTree {
         synchronized (parent) {
             Set<String> children = parent.getChildren();
             if (children != null) {
+                // 当前节点已存在
                 if (children.contains(childName)) {
                     throw new KeeperException.NodeExistsException();
                 }
@@ -481,14 +495,21 @@ public class DataTree {
             if (parentCVersion == -1) {
                 parentCVersion = parent.stat.getCversion();
                 parentCVersion++;
-            }    
+            }
+            // 更新父节点的cversion
             parent.stat.setCversion(parentCVersion);
+            // 更新父节点的pzxid
             parent.stat.setPzxid(zxid);
+            // 获取ACL的longKey
             Long longval = convertAcls(acl);
+            // 创建节点
             DataNode child = new DataNode(parent, data, longval, stat);
+            // 父节点添加子节点
             parent.addChild(childName);
+            // 节点添加到DataTree
             nodes.put(path, child);
             if (ephemeralOwner != 0) {
+                // 临时节点处理
                 HashSet<String> list = ephemerals.get(ephemeralOwner);
                 if (list == null) {
                     list = new HashSet<String>();
@@ -519,7 +540,9 @@ public class DataTree {
             updateCount(lastPrefix, 1);
             updateBytes(lastPrefix, data == null ? 0 : data.length);
         }
+        // 触发节点创建事件
         dataWatches.triggerWatch(path, Event.EventType.NodeCreated);
+        // 触发子节点改变事件
         childWatches.triggerWatch(parentName.equals("") ? "/" : parentName,
                 Event.EventType.NodeChildrenChanged);
         return path;
@@ -788,6 +811,8 @@ public class DataTree {
                 case OpCode.create:
                     CreateTxn createTxn = (CreateTxn) txn;
                     rc.path = createTxn.getPath();
+
+                    // 创建节点
                     createNode(
                             createTxn.getPath(),
                             createTxn.getData(),
@@ -912,6 +937,8 @@ public class DataTree {
          * case where the snapshot contains data ahead of the zxid associated
          * with the file.
          */
+
+        // 更新最新的zxid
         if (rc.zxid > lastProcessedZxid) {
         	lastProcessedZxid = rc.zxid;
         }
@@ -1144,6 +1171,7 @@ public class DataTree {
 
     private void deserializeList(Map<Long, List<ACL>> longKeyMap,
             InputArchive ia) throws IOException {
+        // longKey数量
         int i = ia.readInt("map");
         while (i > 0) {
             Long val = ia.readLong("long");
@@ -1151,9 +1179,11 @@ public class DataTree {
                 aclIndex = val;
             }
             List<ACL> aclList = new ArrayList<ACL>();
+            // acl列表数量
             Index j = ia.startVector("acls");
             while (!j.done()) {
                 ACL acl = new ACL();
+                // 反序列化acl
                 acl.deserialize(ia, "acl");
                 aclList.add(acl);
                 j.incr();
@@ -1191,27 +1221,35 @@ public class DataTree {
     }
 
     public void deserialize(InputArchive ia, String tag) throws IOException {
+        // 反序列化longKey集合
         deserializeList(longKeyMap, ia);
         nodes.clear();
         pTrie.clear();
+        // 读取节点path
         String path = ia.readString("path");
         while (!path.equals("/")) {
             DataNode node = new DataNode();
+            // 反序列化节点
             ia.readRecord(node, "node");
+            // 节点添加到DataTree
             nodes.put(path, node);
             int lastSlash = path.lastIndexOf('/');
             if (lastSlash == -1) {
+                // 根节点
                 root = node;
             } else {
                 String parentPath = path.substring(0, lastSlash);
+                // 父节点
                 node.parent = nodes.get(parentPath);
                 if (node.parent == null) {
                     throw new IOException("Invalid Datatree, unable to find " +
                             "parent " + parentPath + " of path " + path);
                 }
+                // 父节点的子节点列表添加当前节点的节点名称
                 node.parent.addChild(path.substring(lastSlash + 1));
                 long eowner = node.stat.getEphemeralOwner();
                 if (eowner != 0) {
+                    // 临时节点处理
                     HashSet<String> list = ephemerals.get(eowner);
                     if (list == null) {
                         list = new HashSet<String>();

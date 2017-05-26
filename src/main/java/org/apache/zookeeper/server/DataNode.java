@@ -160,9 +160,12 @@ public class DataNode implements Record {
     synchronized public void deserialize(InputArchive archive, String tag)
             throws IOException {
         archive.startRecord("node");
+        // 节点数据
         data = archive.readBuffer("data");
+        // 节点acl
         acl = archive.readLong("acl");
         stat = new StatPersisted();
+        // 反序列化节点stat
         stat.deserialize(archive, "statpersisted");
         archive.endRecord("node");
     }

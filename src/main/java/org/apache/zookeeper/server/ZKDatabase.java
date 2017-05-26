@@ -81,6 +81,7 @@ public class ZKDatabase {
      * @param snapLog the FileTxnSnapLog mapping this zkdatabase
      */
     public ZKDatabase(FileTxnSnapLog snapLog) {
+        // 内存树结构
         dataTree = new DataTree();
         sessionsWithTimeouts = new ConcurrentHashMap<Long, Integer>();
         this.snapLog = snapLog;
@@ -219,7 +220,8 @@ public class ZKDatabase {
                 addCommittedProposal(r);
             }
         };
-        
+
+        // 从内存快照恢复内存数据库, 返回最新的zxid
         long zxid = snapLog.restore(dataTree,sessionsWithTimeouts,listener);
         initialized = true;
         return zxid;

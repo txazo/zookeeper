@@ -72,6 +72,8 @@ public class QuorumPeerMain {
      * the command line.
      * @param args path to the configfile
      */
+
+    // Zookeeper入口
     public static void main(String[] args) {
         QuorumPeerMain main = new QuorumPeerMain();
         try {
@@ -98,16 +100,20 @@ public class QuorumPeerMain {
     {
         QuorumPeerConfig config = new QuorumPeerConfig();
         if (args.length == 1) {
+            // 解析zoo.cfg配置文件
             config.parse(args[0]);
         }
 
         // Start and schedule the the purge task
+        // 自动清理管理
         DatadirCleanupManager purgeMgr = new DatadirCleanupManager(config
                 .getDataDir(), config.getDataLogDir(), config
                 .getSnapRetainCount(), config.getPurgeInterval());
+        // 启动并调度自动清理任务
         purgeMgr.start();
 
         if (args.length == 1 && config.servers.size() > 0) {
+            // 集群方式启动
             runFromConfig(config);
         } else {
             LOG.warn("Either no config or no quorum defined in config, running "
@@ -119,6 +125,7 @@ public class QuorumPeerMain {
 
     public void runFromConfig(QuorumPeerConfig config) throws IOException {
       try {
+          // 注册Log4j的MBean
           ManagedUtil.registerLog4jMBeans();
       } catch (JMException e) {
           LOG.warn("Unable to register log4j JMX control", e);
@@ -135,6 +142,7 @@ public class QuorumPeerMain {
           quorumPeer.setTxnFactory(new FileTxnSnapLog(
                       new File(config.getDataLogDir()),
                       new File(config.getDataDir())));
+          // 集群节点列表
           quorumPeer.setQuorumPeers(config.getServers());
           quorumPeer.setElectionType(config.getElectionAlg());
           quorumPeer.setMyid(config.getServerId());
@@ -145,11 +153,13 @@ public class QuorumPeerMain {
           quorumPeer.setSyncLimit(config.getSyncLimit());
           quorumPeer.setQuorumVerifier(config.getQuorumVerifier());
           quorumPeer.setCnxnFactory(cnxnFactory);
+          // Zookeeper内存数据库
           quorumPeer.setZKDatabase(new ZKDatabase(quorumPeer.getTxnFactory()));
           quorumPeer.setLearnerType(config.getPeerType());
           quorumPeer.setSyncEnabled(config.getSyncEnabled());
           quorumPeer.setQuorumListenOnAllIPs(config.getQuorumListenOnAllIPs());
-  
+
+          // 启动
           quorumPeer.start();
           quorumPeer.join();
       } catch (InterruptedException e) {

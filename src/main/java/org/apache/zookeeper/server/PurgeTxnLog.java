@@ -71,7 +71,9 @@ public class PurgeTxnLog {
 
         FileTxnSnapLog txnLog = new FileTxnSnapLog(dataDir, snapDir);
 
+        // 查找最新的num个内存快照文件
         List<File> snaps = txnLog.findNRecentSnapshots(num);
+        // 清理, 保留最新的num个内存快照文件
         retainNRecentSnapshots(txnLog, snaps);
     }
 
@@ -81,9 +83,11 @@ public class PurgeTxnLog {
         if (snaps.size() == 0)
             return;
         File snapShot = snaps.get(snaps.size() -1);
+        // 保留文件中最小的zxid
         final long leastZxidToBeRetain = Util.getZxidFromName(
                 snapShot.getName(), PREFIX_SNAPSHOT);
 
+        // 文件过滤, 文件名的zxid小于leastZxidToBeRetain, 则过滤掉
         class MyFileFilter implements FileFilter{
             private final String prefix;
             MyFileFilter(String prefix){
@@ -100,12 +104,18 @@ public class PurgeTxnLog {
             }
         }
         // add all non-excluded log files
+
+        // 准备清理的事务日志文件
         List<File> files = new ArrayList<File>(Arrays.asList(txnLog
                 .getDataDir().listFiles(new MyFileFilter(PREFIX_LOG))));
         // add all non-excluded snapshot files to the deletion list
+
+        // 添加清理的内存快照文件
         files.addAll(Arrays.asList(txnLog.getSnapDir().listFiles(
                 new MyFileFilter(PREFIX_SNAPSHOT))));
         // remove the old files
+
+        // 删除文件
         for(File f: files)
         {
             System.out.println("Removing file: "+

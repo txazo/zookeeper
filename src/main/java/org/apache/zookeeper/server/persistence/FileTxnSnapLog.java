@@ -127,6 +127,7 @@ public class FileTxnSnapLog {
      */
     public long restore(DataTree dt, Map<Long, Integer> sessions, 
             PlayBackListener listener) throws IOException {
+        // 内存快照文件反序列化为内存数据库
         snapLog.deserialize(dt, sessions);
         FileTxnLog txnLog = new FileTxnLog(dataDir);
         TxnIterator itr = txnLog.read(dt.lastProcessedZxid+1);
@@ -136,11 +137,15 @@ public class FileTxnSnapLog {
             while (true) {
                 // iterator points to 
                 // the first valid txn when initialized
+
+                // 事务头
                 hdr = itr.getHeader();
                 if (hdr == null) {
                     //empty logs 
                     return dt.lastProcessedZxid;
                 }
+
+                // 比较内存快照的zxid和事务日志的zxid, 得到大的zxid
                 if (hdr.getZxid() < highestZxid && highestZxid != 0) {
                     LOG.error("{}(higestZxid) > {}(next log) for type {}",
                             new Object[] { highestZxid, hdr.getZxid(),
@@ -149,12 +154,15 @@ public class FileTxnSnapLog {
                     highestZxid = hdr.getZxid();
                 }
                 try {
+                    // 从事务日志恢复内存数据库
                     processTransaction(hdr,dt,sessions, itr.getTxn());
                 } catch(KeeperException.NoNodeException e) {
                    throw new IOException("Failed to process transaction type: " +
                          hdr.getType() + " error: " + e.getMessage(), e);
                 }
+                // 触发事务加载监听事件
                 listener.onTxnLoaded(hdr, itr.getTxn());
+                // 处理下一条事务日志
                 if (!itr.next()) 
                     break;
             }

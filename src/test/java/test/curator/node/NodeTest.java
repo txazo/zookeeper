@@ -3,6 +3,8 @@ package test.curator.node;
 import org.junit.Test;
 import test.curator.CuratorJUnitTest;
 
+import java.util.UUID;
+
 public class NodeTest extends CuratorJUnitTest {
 
     @Test
@@ -12,12 +14,12 @@ public class NodeTest extends CuratorJUnitTest {
 
     @Test
     public void testMultiCreate() throws Exception {
-        long start = System.currentTimeMillis();
-        long id = 0;
-        for (long i = 0; i < 100000; i++) {
-            id = start + i;
-            client.create().forPath("/node/" + id, String.valueOf(id).getBytes());
-            Thread.sleep(100);
+        String id = null;
+        for (; ; ) {
+            id = UUID.randomUUID().toString();
+            client.create().forPath("/node/" + id, id.getBytes());
+            client.getData().forPath("/node/" + id);
+            Thread.sleep(1000);
         }
     }
 

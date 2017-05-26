@@ -112,10 +112,14 @@ public class SerializeUtils {
 
     public static void deserializeSnapshot(DataTree dt,InputArchive ia,
             Map<Long, Integer> sessions) throws IOException {
+        // 读取session个数
         int count = ia.readInt("count");
         while (count > 0) {
+            // session id
             long id = ia.readLong("id");
+            // session超时时间
             int to = ia.readInt("timeout");
+            // 解析session集合
             sessions.put(id, to);
             if (LOG.isTraceEnabled()) {
                 ZooTrace.logTraceMessage(LOG, ZooTrace.SESSION_TRACE_MASK,
@@ -124,6 +128,7 @@ public class SerializeUtils {
             }
             count--;
         }
+        // 反序列化tree
         dt.deserialize(ia, "tree");
     }
 

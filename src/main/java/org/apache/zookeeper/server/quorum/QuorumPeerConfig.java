@@ -42,6 +42,7 @@ import org.apache.zookeeper.server.quorum.flexible.QuorumHierarchical;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 
+// Zookeeper节点配置
 public class QuorumPeerConfig {
     private static final Logger LOG = LoggerFactory.getLogger(QuorumPeerConfig.class);
 
@@ -116,6 +117,7 @@ public class QuorumPeerConfig {
                 in.close();
             }
 
+            // 解析zoo.cfg
             parseProperties(cfg);
         } catch (IOException e) {
             throw new ConfigException("Error processing " + path, e);
@@ -177,6 +179,7 @@ public class QuorumPeerConfig {
             } else if (key.equals("autopurge.purgeInterval")) {
                 purgeInterval = Integer.parseInt(value);
             } else if (key.startsWith("server.")) {
+                // 格式: server.{sid}={hostname}:{port}:{electionPort}:{type}
                 int dot = key.indexOf('.');
                 long sid = Long.parseLong(key.substring(dot + 1));
                 String parts[] = value.split(":");
@@ -207,6 +210,7 @@ public class QuorumPeerConfig {
                     servers.put(Long.valueOf(sid), new QuorumServer(sid, hostname, port, electionPort, type));
                 }
             } else if (key.startsWith("group")) {
+                // 分组, 格式: group.{gid}={sid1}:{sid2}...
                 int dot = key.indexOf('.');
                 long gid = Long.parseLong(key.substring(dot + 1));
 
@@ -222,10 +226,12 @@ public class QuorumPeerConfig {
                 }
 
             } else if(key.startsWith("weight")) {
+                // 权重, 格式: weight.{sid}={weight}, 默认为1
                 int dot = key.indexOf('.');
                 long sid = Long.parseLong(key.substring(dot + 1));
                 serverWeight.put(sid, Long.parseLong(value));
             } else {
+                // 其它配置设置为系统属性
                 System.setProperty("zookeeper." + key, value);
             }
         }
@@ -233,6 +239,8 @@ public class QuorumPeerConfig {
         // Reset to MIN_SNAP_RETAIN_COUNT if invalid (less than 3)
         // PurgeTxnLog.purge(File, File, int) will not allow to purge less
         // than 3.
+
+        // 自动清理保留的文件数不小于3
         if (snapRetainCount < MIN_SNAP_RETAIN_COUNT) {
             LOG.warn("Invalid autopurge.snapRetainCount: " + snapRetainCount
                     + ". Defaulting to " + MIN_SNAP_RETAIN_COUNT);
@@ -242,6 +250,8 @@ public class QuorumPeerConfig {
         if (dataDir == null) {
             throw new IllegalArgumentException("dataDir is not set");
         }
+
+        // dataLogDir为空, 则默认为dataDir
         if (dataLogDir == null) {
             dataLogDir = dataDir;
         }
@@ -280,6 +290,9 @@ public class QuorumPeerConfig {
             LOG.error("Invalid configuration, only one server specified (ignoring)");
             servers.clear();
         } else if (servers.size() > 1) {
+            // Zookeeper集群处理逻辑
+
+            // Zookeeper节点数推荐不小于3且为奇数
             if (servers.size() == 2) {
                 LOG.warn("No server failure will be tolerated. " +
                     "You need at least 3 servers.");
@@ -321,6 +334,8 @@ public class QuorumPeerConfig {
                 /*
                  * Set the quorumVerifier to be QuorumHierarchical
                  */
+
+                // 分组仲裁模式
                 quorumVerifier = new QuorumHierarchical(numGroups,
                         serverWeight, serverGroup);
             } else {
@@ -329,13 +344,15 @@ public class QuorumPeerConfig {
                  */
 
                 LOG.info("Defaulting to majority quorums");
+                // 默认为多数仲裁模式
                 quorumVerifier = new QuorumMaj(servers.size());
             }
 
             // Now add observers to servers, once the quorums have been
             // figured out
             servers.putAll(observers);
-    
+
+            // 从{dataDir}/myid文件中读取解析server id
             File myIdFile = new File(dataDir, "myid");
             if (!myIdFile.exists()) {
                 throw new IllegalArgumentException(myIdFile.toString()
@@ -357,6 +374,7 @@ public class QuorumPeerConfig {
             }
             
             // Warn about inconsistent peer type
+            // 处理peerType不一致, 不一致则以server.{sid}配置为准
             LearnerType roleByServersList = observers.containsKey(serverId) ? LearnerType.OBSERVER
                     : LearnerType.PARTICIPANT;
             if (roleByServersList != peerType) {

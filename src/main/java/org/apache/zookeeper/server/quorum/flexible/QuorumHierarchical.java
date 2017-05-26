@@ -64,6 +64,7 @@ import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
  * Note that it is still necessary to define peers using the server keyword.
  */
 
+// 分组仲裁: 组内投票权重大于一半即为分组通过, 大于一半的分组通过即可
 public class QuorumHierarchical implements QuorumVerifier {
     private static final Logger LOG = LoggerFactory.getLogger(QuorumHierarchical.class);
 

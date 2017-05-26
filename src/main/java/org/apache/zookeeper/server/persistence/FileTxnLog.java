@@ -535,6 +535,8 @@ public class FileTxnLog implements TxnLog {
         void init() throws IOException {
             storedFiles = new ArrayList<File>();
             List<File> files = Util.sortDataDir(FileTxnLog.getLogFiles(logDir.listFiles(), 0), "log", false);
+
+            // 查找比zxid大的事务日志文件或者最新的一个事务日志文件
             for (File f: files) {
                 if (Util.getZxidFromName(f.getName(), "log") >= zxid) {
                     storedFiles.add(f);
@@ -545,9 +547,11 @@ public class FileTxnLog implements TxnLog {
                     break;
                 }
             }
+            // 读取第一个事务日志文件
             goToNextLog();
             if (!next())
                 return;
+            // 逐行读取事务日志文件中的事务日志, 直到事务的zxid大于zxid
             while (hdr.getZxid() < zxid) {
                 if (!next())
                     return;

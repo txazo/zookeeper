@@ -40,6 +40,7 @@ public class ManagedUtil {
      * @throws JMException if registration fails
      */
     public static void registerLog4jMBeans() throws JMException {
+        // 设置zookeeper.jmx.log4j.disable=true, 禁用注册Log4j的MBean
         if (Boolean.getBoolean("zookeeper.jmx.log4j.disable") == true) {
             return;
         }

@@ -497,8 +497,11 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     
     @Override
     public synchronized void start() {
+        // 加载内存数据库
         loadDataBase();
-        cnxnFactory.start();        
+        // 启动NIOServerCnxnFactory
+        cnxnFactory.start();
+        // 初始化Leader选举
         startLeaderElection();
         super.start();
     }
@@ -507,10 +510,14 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         File updating = new File(getTxnFactory().getSnapDir(),
                                  UPDATING_EPOCH_FILENAME);
 		try {
+            // 加载内存数据库
             zkDb.loadDataBase();
 
             // load the epochs
+
+            // 最新的zxid
             long lastProcessedZxid = zkDb.getDataTree().lastProcessedZxid;
+            // 从zxid中解析出epoch
     		long epochOfZxid = ZxidUtils.getEpochFromZxid(lastProcessedZxid);
             try {
             	currentEpoch = readLongFromFile(CURRENT_EPOCH_FILENAME);
@@ -519,7 +526,9 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                              "taking a snapshot but before updating current " +
                              "epoch. Setting current epoch to {}.",
                              UPDATING_EPOCH_FILENAME, epochOfZxid);
+                    // 更新epoch到currentEpoch文件
                     setCurrentEpoch(epochOfZxid);
+                    // 删除updatingEpoch文件
                     if (!updating.delete()) {
                         throw new IOException("Failed to delete " +
                                               updating.toString());
@@ -539,6 +548,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             	throw new IOException("The current epoch, " + ZxidUtils.zxidToString(currentEpoch) + ", is older than the last zxid, " + lastProcessedZxid);
             }
             try {
+                // 从acceptedEpoch文件读取epoch
             	acceptedEpoch = readLongFromFile(ACCEPTED_EPOCH_FILENAME);
             } catch(FileNotFoundException e) {
             	// pick a reasonable epoch number
@@ -567,6 +577,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     }
     synchronized public void startLeaderElection() {
     	try {
+            // 当前投票, 投给自己
     		currentVote = new Vote(myid, getLastLoggedZxid(), getCurrentEpoch());
     	} catch(IOException e) {
     		RuntimeException re = new RuntimeException(e.getMessage());
@@ -591,6 +602,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                 throw new RuntimeException(e);
             }
         }
+        // 创建选举算法
         this.electionAlg = createElectionAlgorithm(electionType);
     }
     
@@ -686,10 +698,13 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             le = new AuthFastLeaderElection(this, true);
             break;
         case 3:
+            // 默认选举算法FastLeader
             qcm = new QuorumCnxManager(this);
             QuorumCnxManager.Listener listener = qcm.listener;
             if(listener != null){
+                // 启动监听线程
                 listener.start();
+                // 创建FastLeader选举算法
                 le = new FastLeaderElection(this, qcm);
             } else {
                 LOG.error("Null listener when initializing cnx manager");

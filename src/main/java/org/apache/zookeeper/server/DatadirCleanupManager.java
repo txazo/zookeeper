@@ -97,13 +97,17 @@ public class DatadirCleanupManager {
             return;
         }
         // Don't schedule the purge task with zero or negative purge interval.
+
+        // purgeInterval > 0才启动, 否则禁用
         if (purgeInterval <= 0) {
             LOG.info("Purge task is not scheduled.");
             return;
         }
 
         timer = new Timer("PurgeTask", true);
+        // 自动清理任务
         TimerTask task = new PurgeTask(dataLogDir, snapDir, snapRetainCount);
+        // purgeInterval以小时为单位
         timer.scheduleAtFixedRate(task, 0, TimeUnit.HOURS.toMillis(purgeInterval));
 
         purgeTaskStatus = PurgeTaskStatus.STARTED;
@@ -122,9 +126,14 @@ public class DatadirCleanupManager {
         }
     }
 
+    // 自动清理任务
     static class PurgeTask extends TimerTask {
+
+        // 事务日志目录
         private String logsDir;
+        // 内存快照目录
         private String snapsDir;
+        // 保留的文件数
         private int snapRetainCount;
 
         public PurgeTask(String dataDir, String snapDir, int count) {
@@ -137,6 +146,7 @@ public class DatadirCleanupManager {
         public void run() {
             LOG.info("Purge task started.");
             try {
+                // 清理文件
                 PurgeTxnLog.purge(new File(logsDir), new File(snapsDir), snapRetainCount);
             } catch (Exception e) {
                 LOG.error("Error occured while purging.", e);

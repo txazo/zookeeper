@@ -121,14 +121,23 @@ public class StatPersisted implements Record {
   }
   public void deserialize(InputArchive a_, String tag) throws java.io.IOException {
     a_.startRecord(tag);
+    // 节点创建时的zxid
     czxid=a_.readLong("czxid");
+    // 节点最近更新的xzid
     mzxid=a_.readLong("mzxid");
+    // 节点创建时的时间戳
     ctime=a_.readLong("ctime");
+    // 节点最近更新的时间戳
     mtime=a_.readLong("mtime");
+    // 节点数据更新次数
     version=a_.readInt("version");
+    // 子节点更新次数
     cversion=a_.readInt("cversion");
+    // 节点acl更新次数
     aversion=a_.readInt("aversion");
+    // 临时节点的session id
     ephemeralOwner=a_.readLong("ephemeralOwner");
+    // 子节点最近更新的xzid
     pzxid=a_.readLong("pzxid");
     a_.endRecord(tag);
 }

@@ -471,6 +471,7 @@ public class FastLeaderElection implements Election {
          */
         Messenger(QuorumCnxManager manager) {
 
+            // 消息发送线程
             this.ws = new WorkerSender(manager);
 
             Thread t = new Thread(this.ws,
@@ -478,6 +479,7 @@ public class FastLeaderElection implements Election {
             t.setDaemon(true);
             t.start();
 
+            // 消息接受线程
             this.wr = new WorkerReceiver(manager);
 
             t = new Thread(this.wr,
@@ -543,6 +545,8 @@ public class FastLeaderElection implements Election {
 
         sendqueue = new LinkedBlockingQueue<ToSend>();
         recvqueue = new LinkedBlockingQueue<Notification>();
+
+        // 消息处理器
         this.messenger = new Messenger(manager);
     }
 

@@ -158,7 +158,8 @@ public class QuorumCnxManager {
         
         this.self = self;
 
-        // Starts listener thread that waits for connection requests 
+        // Starts listener thread that waits for connection requests
+        // 监听线程
         listener = new Listener();
     }
 

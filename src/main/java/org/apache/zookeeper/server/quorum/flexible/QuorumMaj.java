@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
  * implementation is straightforward.
  *
  */
+// 多数仲裁: 票数大于一半
 public class QuorumMaj implements QuorumVerifier {
     private static final Logger LOG = LoggerFactory.getLogger(QuorumMaj.class);
     
