@@ -536,7 +536,7 @@ public class FileTxnLog implements TxnLog {
             storedFiles = new ArrayList<File>();
             List<File> files = Util.sortDataDir(FileTxnLog.getLogFiles(logDir.listFiles(), 0), "log", false);
 
-            // 查找比zxid大的事务日志文件或者最新的一个事务日志文件
+            // 查找比zxid大的事务日志文件和最新的一个比zxid小的事务日志文件
             for (File f: files) {
                 if (Util.getZxidFromName(f.getName(), "log") >= zxid) {
                     storedFiles.add(f);

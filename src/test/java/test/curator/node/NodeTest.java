@@ -18,8 +18,8 @@ public class NodeTest extends CuratorJUnitTest {
         for (; ; ) {
             id = UUID.randomUUID().toString();
             client.create().forPath("/node/" + id, id.getBytes());
-            client.getData().forPath("/node/" + id);
-            Thread.sleep(1000);
+//            client.getData().forPath("/node/" + id);
+            Thread.sleep(5000);
         }
     }
 
