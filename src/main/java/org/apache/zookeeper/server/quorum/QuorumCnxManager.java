@@ -117,7 +117,7 @@ public class QuorumCnxManager {
      * Reception queue
      */
 
-    // 消息接受队列
+    // 消息接收队列
     public final ArrayBlockingQueue<Message> recvQueue;
     /*
      * Object to synchronize access to recvQueue
@@ -284,10 +284,13 @@ public class QuorumCnxManager {
             LOG.warn("Exception reading or writing challenge: " + e.toString());
             return;
         }
-        
+
+        // 下面的处理, 防止双方互相建立Socket连接, 保证两节点之间只有一个Socket连接
+        // 其中, sid小的为server端, sid大的为client端
+
         //If wins the challenge, then close the new connection.
         if (sid < self.getId()) {
-            // 当前节点的sid比sid大
+            // server sid比client sid大
 
             /*
              * This replica might still believe that the connection to sid is
@@ -304,12 +307,18 @@ public class QuorumCnxManager {
              */
             LOG.debug("Create new connection to server: " + sid);
             closeSocket(sock);
+
+            // 启动一个新的连接到client sid
             connectOne(sid);
 
             // Otherwise start worker threads to receive data.
         } else {
-            // 当前节点的sid比sid小, 启动worker线程
+            // server sid比client sid小, 启动SendWorker线程和RecvWorker线程
+
+            // 消息发送线程
             SendWorker sw = new SendWorker(sock, sid);
+
+            // 消息接收线程
             RecvWorker rw = new RecvWorker(sock, sid, sw);
             sw.setRecv(rw);
 
@@ -342,6 +351,8 @@ public class QuorumCnxManager {
          */
         if (self.getId() == sid) {
              b.position(0);
+
+            // 消息发送给自己, 直接添加到消息接收队列
              addToRecvQueue(new Message(b.duplicate(), sid));
             /*
              * Otherwise send to the corresponding thread to send.
@@ -359,6 +370,7 @@ public class QuorumCnxManager {
              } else {
                  ArrayBlockingQueue<ByteBuffer> bq = queueSendMap.get(sid);
                  if(bq != null){
+                     // 添加到消息发送队列
                      addToSendQueue(bq, b);
                  } else {
                      LOG.error("No queue for server " + sid);
@@ -556,7 +568,7 @@ public class QuorumCnxManager {
                         setSockOpts(client);
                         LOG.info("Received connection request "
                                 + client.getRemoteSocketAddress());
-                        // 处理集群其它节点的连接
+                        // 接收集群其它节点的连接
                         receiveConnection(client);
                         numRetries = 0;
                     }
@@ -604,6 +616,8 @@ public class QuorumCnxManager {
      * soon as there is one available. If connection breaks, then opens a new
      * one.
      */
+
+    // 消息发送线程
     class SendWorker extends ZooKeeperThread {
         Long sid;
         Socket sock;
@@ -729,6 +743,7 @@ public class QuorumCnxManager {
                         ArrayBlockingQueue<ByteBuffer> bq = queueSendMap
                                 .get(sid);
                         if (bq != null) {
+                            // 从发送队列中获取消息
                             b = pollSendQueue(bq, 1000, TimeUnit.MILLISECONDS);
                         } else {
                             LOG.error("No queue of incoming messages for " +
@@ -738,6 +753,7 @@ public class QuorumCnxManager {
 
                         if(b != null){
                             lastMessageSent.put(sid, b);
+                            // 发送消息
                             send(b);
                         }
                     } catch (InterruptedException e) {
@@ -758,6 +774,8 @@ public class QuorumCnxManager {
      * Thread to receive messages. Instance waits on a socket read. If the
      * channel breaks, then removes itself from the pool of receivers.
      */
+
+    // 消息接收线程
     class RecvWorker extends ZooKeeperThread {
         Long sid;
         Socket sock;
@@ -821,6 +839,8 @@ public class QuorumCnxManager {
                     byte[] msgArray = new byte[length];
                     din.readFully(msgArray, 0, length);
                     ByteBuffer message = ByteBuffer.wrap(msgArray);
+
+                    // 消息放入消息接收队列
                     addToRecvQueue(new Message(message.duplicate(), sid));
                 }
             } catch (Exception e) {
